@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Trip Fuel Cost Calculator</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6f8;
+      color: #202124;
+    }
+
+    .calculator {
+      width: 100%;
+      max-width: 480px;
+      padding: 28px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgb(0 0 0 / 10%);
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      font-size: 1.6rem;
+      text-align: center;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #c7c7c7;
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    input:focus {
+      border-color: #2563eb;
+      outline: 2px solid rgb(37 99 235 / 20%);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: 0;
+      border-radius: 6px;
+      background: #2563eb;
+      color: white;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .result {
+      display: none;
+      margin-top: 24px;
+      padding: 18px;
+      border-radius: 8px;
+      background: #eef6ff;
+    }
+
+    .result.visible {
+      display: block;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .result-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .per-person {
+      padding-top: 12px;
+      border-top: 1px solid #bfd7f5;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .error {
+      min-height: 20px;
+      margin-top: 12px;
+      color: #b91c1c;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="calculator">
+    <h1>Trip Fuel Cost Calculator</h1>
+
+    <form id="fuel-form">
+      <div class="field">
+        <label for="distance">Total trip distance (km)</label>
+        <input
+          id="distance"
+          name="distance"
+          type="number"
+          min="0.1"
+          step="0.1"
+          placeholder="Example: 350"
+          required
+        >
+      </div>
+
+      <div class="field">
+        <label for="fuel-price">Fuel price (€/liter)</label>
+        <input
+          id="fuel-price"
+          name="fuelPrice"
+          type="number"
+          min="0.01"
+          step="0.001"
+          placeholder="Example: 1.599"
+          required
+        >
+      </div>
+
+      <div class="field">
+        <label for="consumption">Fuel consumption (liters/100 km)</label>
+        <input
+          id="consumption"
+          name="consumption"
+          type="number"
+          min="0.1"
+          step="0.1"
+          placeholder="Example: 6.5"
+          required
+        >
+      </div>
+
+      <div class="field">
+        <label for="members">Number of trip members</label>
+        <input
+          id="members"
+          name="members"
+          type="number"
+          min="1"
+          step="1"
+          placeholder="Example: 4"
+          required
+        >
+      </div>
+
+      <button type="submit">Calculate</button>
+
+      <div id="error" class="error" role="alert"></div>
+    </form>
+
+    <section id="result" class="result" aria-live="polite">
+      <div class="result-row">
+        <span>Fuel required:</span>
+        <strong id="fuel-required"></strong>
+      </div>
+
+      <div class="result-row">
+        <span>Total fuel cost:</span>
+        <strong id="total-cost"></strong>
+      </div>
+
+      <div class="result-row per-person">
+        <span>Cost per person:</span>
+        <strong id="cost-per-person"></strong>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("fuel-form");
+    const result = document.getElementById("result");
+    const error = document.getElementById("error");
+
+    const euroFormatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "EUR"
+    });
+
+    const numberFormatter = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const distance = Number(form.elements.distance.value);
+      const fuelPrice = Number(form.elements.fuelPrice.value);
+      const consumption = Number(form.elements.consumption.value);
+      const members = Number(form.elements.members.value);
+
+      error.textContent = "";
+      result.classList.remove("visible");
+
+      const valuesAreValid =
+        distance > 0 &&
+        fuelPrice > 0 &&
+        consumption > 0 &&
+        Number.isInteger(members) &&
+        members > 0;
+
+      if (!valuesAreValid) {
+        error.textContent = "Please enter valid positive values.";
+        return;
+      }
+
+      const fuelRequired = distance * consumption / 100;
+      const totalCost = fuelRequired * fuelPrice;
+      const costPerPerson = totalCost / members;
+
+      document.getElementById("fuel-required").textContent =
+        `${numberFormatter.format(fuelRequired)} liters`;
+
+      document.getElementById("total-cost").textContent =
+        euroFormatter.format(totalCost);
+
+      document.getElementById("cost-per-person").textContent =
+        euroFormatter.format(costPerPerson);
+
+      result.classList.add("visible");
+    });
+  </script>
+</body>
+</html>
